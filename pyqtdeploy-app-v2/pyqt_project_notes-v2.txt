@@ -1,0 +1,170 @@
+My notes for pyqt_project
+
+Aim is to install all the latest software releases and generate an .apk
+
+Host:
+Ubuntu 18.04
+Python v3.6.9
+
+1) Get Latest Qt
+
+Download from: https://www.qt.io/download-qt-installer
+
+Downloaded installer qt-unified-linux-x64-4.5.2-online.
+Version of qt installed = Qtv5.15.2
+Location of folder = ~/Qt
+
+Apparently the qmake path is the path to qmake executable (qmake.exe for windows).
+This can be found in: ~/Qt/5.15.2/android/bin/
+The path to the folder (the executable) is then: ~/Qt/5.15.2/android/bin/qmake
+
+2) Get Android Studio
+
+Download from: https://developer.android.com/studio 
+In our case, the version is v2022.2.1.19 for android-studio
+
+Extract the contents of the .tar.gz and move the contents of android-studio to $HOME directory
+Start the installation with:
+cd ~/android-studio/bin
+./studio.sh
+
+Choose the custom installation and make sure that you install the relevant Android target (Android 13 in our example).
+Make sure you set the SDK path to be ~/Android/Sdk/.
+Note that the JDK is not relevant at this stage.
+
+Start Android Studio and make sure that you have picked the right SDK:
+cd ~/android-studio/bin
+./studio.sh
+Go to more actions -> SDK manager -> SDK platforms tab -> Show package details -> make sure you have the SDK platform and the sources for Android (in our case 33)
+In SDK tools tab -> Make sure that ????
+	- Android SDK build tools = 33.0.2
+	- Android Emulator (optional)
+	- Android SDK Platform-Tools
+Confirm that the path ~/Android/Sdk/platforms contains repo "android-33"
+
+3) Get Android NDK
+
+WARNING
+Note that the folder "platforms" has been removed in r21.
+Therefore, you cannot download the latest version from: https://developer.android.com/ndk/downloads
+In our case, latest version is r25c.
+This is because there is no "platforms" folder in it.
+
+The issue is discussed at: https://stackoverflow.com/questions/56228822/ndk-does-not-contain-any-platforms
+
+SOLUTION
+Open Android Studio and go to SDK tools tab -> Install the latest NDK side by side (in our case it is v25.2
+You can confirm the installation in: 
+The path to "platforms/android-33" has been replaced by the following: ~/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr
+Note that you still need to find the relevant folder / architecture -> usr/lib/x86_64-linux-android/33
+
+4) Get Pyqtdeploy example folder
+
+export APP_DIR=~/Documents/simple-pyqt5-android-app
+
+cd $APP_DIR
+pip3 install virtualenv
+mkdir -p venv
+cd venv
+virtualenv simple-pyqt5-android-app-venv-v2 -p python3
+
+source $APP_DIR/venv/simple-pyqt5-android-app-venv-v2/bin/activate
+
+cd $APP_DIR
+pip3 install -r requirements-v2.txt
+
+Download the pyqtdeploy folder corresponding to the version in your venv: https://pypi.org/project/pyqtdeploy/
+Use "pip3 list --local" to find the version.
+
+In our case the version is: v3.1.2 -> https://pypi.org/project/pyqtdeploy/3.1.2/#files
+
+5) PyQt to APK converter setup
+
+Copy the contents of $APP_DIR/pyqtdeploy-3.1.2/demo into $APP_DIR/pyqtdeploy-app-v2
+Delete $APP_DIR/pyqtdeploy-app-v2/pyqt-demo.py
+Rename $APP_DIR/pyqtdeploy-app-v2/build-demo.py into $APP_DIR/pyqtdeploy-app-v2/build-app.py
+Replace the line shutil.copy('pyqt-demo.py', os.path.join('data', 'pyqt-demo.py.dat')) in build-app.py with:
+
+shutil.copy('../example-pyqt5-app.py', os.path.join('data', 'example-pyqt5-app.py.dat'))
+
+Rename all occurrences of pyqt-demo into example-pyqt5-app in $APP_DIR/pyqtdeploy-app-v2/build-app.py
+
+Rename $APP_DIR/pyqtdeploy-app-v2/pyqt-demo.pdt into $APP_DIR/pyqtdeploy-app-v2/example-pyqt5-app.pdt using:
+mv pyqt-demo.pdt example-pyqt5-app.pdt
+
+Update the .pdt using:
+pyqtdeploy example-pyqt5-app.pdt
+
+Update the location of the main script file in example-pyqt5-app.pdt: use the file explorer to find example-pyqt5-app.py
+In the Pyqt modules/packages tab -> only tick the packages you need (QtCore and QtWidgets) along with the compulsory ones.
+
+Rename pyqt-demo.py.dat inside of example-pyqt5-app.pdy with vim into: example-pyqt5-app.py.dat
+
+Check python version?
+
+Update sysroot.toml to reflect the packages selected in example-pyqt5-app.pdy and the desired versions
+Use "pip list --local" to find the relevant versions.
+Note: pyqt5 and qt5 versions might be different.
+Note2: remove the unneeded packages in pyqt5 section.
+
+6) Build debug
+
+Confirm app is working:
+
+cd $APP_DIR
+python3 example-pyqt5-app.py
+
+a) First try no args:
+
+cd $APP_DIR/pyqtdeploy-app-v2
+python3 build-app.py --target android-64 --verbose
+
+ERROR: --qmake must be specified for android-64
+
+b) Second try with args:
+
+cd $APP_DIR/pyqtdeploy-app-v2
+python3 build-app.py --target android-64 --qmake /home/achillemartin/Qt/5.15.2/android/bin/qmake --verbose
+
+ERROR: pyqtdeploy-sysroot: the ANDROID_NDK_ROOT environment variable must be set
+
+c) Third try with env variables
+
+To figure out the variables needed, look at the pip files located in:
+cd $VIRTUAL_ENV/lib/python3.6/site-packages/<pip_package>
+
+
+
+export APP_DIR=$HOME/Documents/simple-pyqt5-android-app
+export RESOURCES_DIR=$APP_DIR/pyqtdeploy-app-v2/resources
+export QT_DIR=$HOME/Qt/5.12.2
+export QMAKE_DIR=$QT_DIR/bin/qmake
+export ANDROID_SDK_ROOT=$HOME/Android/Sdk
+export ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/25.2.9519653/toolchains/llvm/prebuilt/linux-x86_64
+export ANDROID_NDK_PLATFORM=android-33
+
+# Official
+# Move "sysroot" folder from $ANDROID_NDK_ROOT/ to $ANDROID_NDK_ROOT
+# The folder $ANDROID_NDK_ROOT above must contain the "sysroot" in which there should be an "android-33" folder pasted from usr/lib/x86_64-linux-android/33
+# The folder $ANDROID_NDK_ROOT above must also contain the "source.properties"
+# Create "platforms" folder in $ANDROID_NDK_ROOT and add "android-33" in there
+
+
+# The folder $ANDROID_NDK_ROOT above must contain the "sysroot" in which there should be an "android-33" folder pasted from usr/lib/x86_64-linux-android/33
+# The folder $ANDROID_NDK_ROOT above must also contain the "source.properties" from $ANDROID_SDK_ROOT/ndk/25.2.9519653
+# Rename the folder "platform_tools" into "tools" in $ANDROID_SDK_ROOT
+# Create folder "platforms" in $ANDROID_NDK_ROOT and add "android-33" in there
+
+cd $APP_DIR/pyqtdeploy-app-v2
+python3 build-app.py --target android-64 --qmake $QMAKE_DIR --verbose
+
+ERROR: Issue with missing dependencies.
+
+TO SORT OUT.
+
+
+
+
+
+
+
