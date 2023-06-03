@@ -1,0 +1,4 @@
+pyqtdeploy==3.1.2
+PyQt5>=5.15.6
+sip==5.5.0
+PyQt-builder==1.5.0

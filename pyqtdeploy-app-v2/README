@@ -1,0 +1,22 @@
+This directory contains a simple widget-based demonstration application
+(pyqt-demo.py) that will build on all supported target platforms.  When run it
+displays various pieces of information about what is included in the
+application.
+
+The build-demo.py will first build a sysroot (using the specification in
+sysroot.toml) and then build the application itself.
+
+build-demo.py will not build a sysroot if it finds an existing one.  The
+'--build-sysroot' option to build-demo.py will rebuild the sysroot even if one
+already exists.
+
+By default build-demo.py will build a native application.  On macOS the
+'--target' option can be used to build applications for iOS and Android.  It
+should also be possible to build Android applications on Windows and Linux but
+this isn't tested.
+
+build-demo.py will download the source code for the different components
+(Python, OpenSSL, Qt, SIP, PyQt etc.) automatically.  However for iOS and
+Android targets Qt must be installed using the binary installers from The Qt
+Company.  The '--qmake' option must be used to specify the full path of the
+qmake executable in the Qt installation.
